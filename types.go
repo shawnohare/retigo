@@ -31,128 +31,206 @@ func (p PoolDoer) Do(cmd string, args ...interface{}) (interface{}, error) {
 	return conn.Do(cmd, args...)
 }
 
-type redigoResult struct {
+// Type represents a general Redis response type, as returned by redigo.
+// All retigo types embed the Type structure and have access to its methods.
+type Type struct {
 	val interface{}
 	err error
 }
 
-// Bool wraps the redigo response for a Redis function with boolean return type.
-type Bool struct {
-	redigo *redigoResult
-}
-
 // Integer wraps the redigo response for a Redis function with integer return type.
 type Integer struct {
-	redigo *redigoResult
+	*Type
 }
 
 // SimpleString wraps the redigo response for a Redis function with simple string return type.
 type SimpleString struct {
-	redigo *redigoResult
+	*Type
 }
 
 // BulkString wraps the redigo response for a Redis function with  bulk string return type.
 type BulkString struct {
-	redigo *redigoResult
+	*Type
 }
 
 // Array wraps the redigo response for a Redis function with  array string return type.
 type Array struct {
-	redigo *redigoResult
+	*Type
 }
 
-func (r *redigoResult) result() (interface{}, error) {
-	if r == nil {
+// Redigo returns the original redigo command response the type represents.
+// For example, conn.Do("GET", "key") is equivalent to
+// Get(conn, "key").Redigo(), where conn is some redis.Conn instance.
+func (t *Type) Redigo() (interface{}, error) {
+	if t == nil {
 		return nil, nil
 	}
-	return r.val, r.err
+	return t.val, t.err
 }
 
-func newRedigoResult(val interface{}, err error) *redigoResult {
-	return &redigoResult{val: val, err: err}
+// Bool applies the redigo helper to the the retigo type.
+// Bool is a helper that converts a command reply to a boolean. If err is not
+// equal to nil, then Bool returns false, err. Otherwise Bool converts the
+// reply to boolean as follows:
+//
+//  Reply type      Result
+//  integer         value != 0, nil
+//  bulk string     strconv.ParseBool(reply)
+//  nil             false, ErrNil
+//  other           false, error
+func (t *Type) Bool() (bool, error) {
+	return redis.Bool(t.Redigo())
 }
 
-// Redigo returns the original redigo command response.
-func (r *Integer) Redigo() (interface{}, error) {
-	if r == nil {
-		return nil, nil
-	}
-	return r.redigo.result()
+// Bytes applies the redigo helper to the retigo type.
+// Bytes is a helper that converts a command reply to a slice of bytes. If err
+// is not equal to nil, then Bytes returns nil, err. Otherwise Bytes converts
+// the reply to a slice of bytes as follows:
+//
+//  Reply type      Result
+//  bulk string     reply, nil
+//  simple string   []byte(reply), nil
+//  nil             nil, ErrNil
+//  other           nil, error
+func (t *Type) Bytes() ([]byte, error) {
+	return redis.Bytes(t.Redigo())
 }
 
-// Redigo returns the original redigo command response.
-func (r *Bool) Redigo() (interface{}, error) {
-	if r == nil {
-		return nil, nil
-	}
-	return r.redigo.result()
+// Float64 applies the redigo helper to the retigo type.
+// Float64 is a helper that converts a command reply to 64 bit float. If err is
+// not equal to nil, then Float64 returns 0, err. Otherwise, Float64 converts
+// the reply to an int as follows:
+//
+//  Reply type    Result
+//  bulk string   parsed reply, nil
+//  nil           0, ErrNil
+//  other         0, error
+func (t *Type) Float64() (float64, error) {
+	return redis.Float64(t.Redigo())
 }
 
-// Redigo returns the original redigo command response.
-func (r *SimpleString) Redigo() (interface{}, error) {
-	if r == nil {
-		return nil, nil
-	}
-	return r.redigo.result()
+// Int applies the redigo helper to the retigo type.
+// Int is a helper that converts a command reply to an integer. If err is not
+// equal to nil, then Int returns 0, err. Otherwise, Int converts the
+// reply to an int as follows:
+//
+//  Reply type    Result
+//  integer       int(reply), nil
+//  bulk string   parsed reply, nil
+//  nil           0, ErrNil
+//  other         0, error
+func (t *Type) Int() (int, error) {
+	return redis.Int(t.Redigo())
 }
 
-// Redigo returns the original redigo command response.
-func (r *BulkString) Redigo() (interface{}, error) {
-	if r == nil {
-		return nil, nil
-	}
-	return r.redigo.result()
+// Int64 applies the redigo helper to the retigo type.
+// Int64 is a helper that converts a command reply to 64 bit integer. If err is
+// not equal to nil, then Int returns 0, err. Otherwise, Int64 converts the
+// reply to an int64 as follows:
+//
+//  Reply type    Result
+//  integer       reply, nil
+//  bulk string   parsed reply, nil
+//  nil           0, ErrNil
+//  other         0, error
+func (t *Type) Int64() (int64, error) {
+	return redis.Int64(t.Redigo())
 }
 
-// Redigo returns the original redigo command response.
-func (r *Array) Redigo() (interface{}, error) {
-	if r == nil {
-		return nil, nil
-	}
-	return r.redigo.result()
+// Uint64 applies the redigo helper to the retigo type.
+// Uint64 is a helper that converts a command reply to 64 bit integer. If err is
+// not equal to nil, then Int returns 0, err. Otherwise, Int64 converts the
+// reply to an int64 as follows:
+//
+//  Reply type    Result
+//  integer       reply, nil
+//  bulk string   parsed reply, nil
+//  nil           0, ErrNil
+//  other         0, error
+func (t *Type) Uint64() (uint64, error) {
+	return redis.Uint64(t.Redigo())
+}
+
+// String applies the redigo helper to the retigo type.
+// String is a helper that converts a command reply to a string. If err is not
+// equal to nil, then String returns "", err. Otherwise String converts the
+// reply to a string as follows:
+//
+//  Reply type      Result
+//  bulk string     string(reply), nil
+//  simple string   reply, nil
+//  nil             "",  ErrNil
+//  other           "",  error
+func (t *Type) String() (string, error) {
+	return redis.String(t.Redigo())
 }
 
 // Result returns a typed redigo command response.
-func (r *Integer) Result() (int64, error) {
-	return redis.Int64(r.redigo.result())
+func (t *Integer) Result() (int64, error) {
+	return t.Int64()
 }
 
 // Result returns a typed redigo command response.
-func (r *Bool) Result() (bool, error) {
-	return redis.Bool(r.redigo.result())
+func (t *SimpleString) Result() (string, error) {
+	return t.String()
 }
 
 // Result returns a typed redigo command response.
-func (r *SimpleString) Result() (string, error) {
-	return redis.String(r.redigo.result())
+func (t *BulkString) Result() ([]byte, error) {
+	return t.Bytes()
 }
 
 // Result returns a typed redigo command response.
-func (r *BulkString) Result() ([]byte, error) {
-	return redis.Bytes(r.redigo.result())
+func (t *Array) Result() ([]interface{}, error) {
+	return redis.Values(t.Redigo())
 }
 
-// Result returns a typed redigo command response.
-func (r *Array) Result() ([]interface{}, error) {
-	return redis.Values(r.redigo.result())
+// Define array type specific helper methods.
+func (t *Array) ByteSlices() ([][]byte, error) {
+	return redis.ByteSlices(t.Redigo())
 }
 
-func NewSimpleString(val interface{}, err error) *SimpleString {
-	return &SimpleString{redigo: newRedigoResult(val, err)}
+// Ints applies the redigo helper function to array responses.
+func (t *Array) Ints() ([]int, error) {
+	return redis.Ints(t.Redigo())
 }
 
-func NewBulkString(val interface{}, err error) *BulkString {
-	return &BulkString{redigo: newRedigoResult(val, err)}
+// Strings applies the redigo helper function to array responses.
+func (t *Array) Strings() ([]string, error) {
+	return redis.Strings(t.Redigo())
 }
 
-func NewInteger(val interface{}, err error) *Integer {
-	return &Integer{redigo: newRedigoResult(val, err)}
+// StringMap applies the redigo helper function to array responses.
+func (t *Array) StringMap() (map[string]string, error) {
+	return redis.StringMap(t.Redigo())
 }
 
-func NewBool(val interface{}, err error) *Bool {
-	return &Bool{redigo: newRedigoResult(val, err)}
+// IntMap applies the redigo helper function to array responses.
+func (t *Array) IntMap() (map[string]int, error) {
+	return redis.IntMap(t.Redigo())
 }
 
-func NewArray(val interface{}, err error) *Array {
-	return &Array{redigo: newRedigoResult(val, err)}
+// Int64Map applies the redigo helper function to array responses.
+func (t *Array) Int64Map() (map[string]int64, error) {
+	return redis.Int64Map(t.Redigo())
+}
+
+func NewType(value interface{}, err error) *Type {
+	return &Type{val: value, err: err}
+}
+
+func NewSimpleString(value interface{}, err error) *SimpleString {
+	return &SimpleString{Type: NewType(value, err)}
+}
+
+func NewBulkString(value interface{}, err error) *BulkString {
+	return &BulkString{Type: NewType(value, err)}
+}
+
+func NewInteger(value interface{}, err error) *Integer {
+	return &Integer{Type: NewType(value, err)}
+}
+
+func NewArray(value interface{}, err error) *Array {
+	return &Array{Type: NewType(value, err)}
 }
