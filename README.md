@@ -4,6 +4,11 @@ Package retigo provides typed Redis commands that can be used with
 (generalized) redigo connections.  Each Redis command has a redigo Do and
 Send version.
 
+The provided functions return structures representing Redis command return
+types.  The Go types these structures return via their `Result` methods
+respect the conventions in the redigo package.  For example,
+`BulkString.Result` returns `([]byte, error)`
+
 ## Example (Do)
 
 Suppose a `conn` is a redigo `redis.Conn` instance connected to some Redis
