@@ -41,6 +41,8 @@ retigo types.  For example,
 ```go
 i, err := retigo.Get(conn, "key").Int()
 // is equivalent to
+i, err := redis.Int(retigo.Get(conn, "key").Redigo())
+// is equivalent to
 i, err := redis.Int(conn.Do("GET", "key"))
 ```
 
