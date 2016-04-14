@@ -1,35 +1,33 @@
-// Package retigo provides typed Redis commands that can be used with
-// (generalized) redigo connections.  The function response types follow
-// the conventions of both Redis and redigo.
 package retigo
 
 import (
 	"github.com/garyburd/redigo/redis"
 )
 
-type Conn interface {
-	Do(cmd string, args ...interface{}) (interface{}, error)
-	// Send(cmd string, args ...interface{}) error
-	Close()
-}
+// FIXME: put these in an example or something.
+// type BasicConn interface {
+// 	Do(cmd string, args ...interface{}) (interface{}, error)
+// 	// Send(cmd string, args ...interface{}) error
+// 	Close()
+// }
 
-type Pool interface {
-	Get() Conn
-}
+// type Pool interface {
+// 	Get() BasicConn
+// }
 
-// PoolDoer implements a Doer interface from an underlying connection pool.
-// Instances can be used with this package's typed redigo commands.
-type PoolDoer struct {
-	Pool Pool
-}
+// // PoolDoer implements a Doer interface from an underlying connection pool.
+// // Instances can be used with this package's typed redigo commands.
+// type PoolDoer struct {
+// 	Pool Pool
+// }
 
-// Do fetches a new connection from the underlying pool, calls its Do method,
-// and closes the connection.
-func (p PoolDoer) Do(cmd string, args ...interface{}) (interface{}, error) {
-	conn := p.Pool.Get()
-	defer conn.Close()
-	return conn.Do(cmd, args...)
-}
+// // Do fetches a new connection from the underlying pool, calls its Do method,
+// // and closes the connection.
+// func (p PoolDoer) Do(cmd string, args ...interface{}) (interface{}, error) {
+// 	conn := p.Pool.Get()
+// 	defer conn.Close()
+// 	return conn.Do(cmd, args...)
+// }
 
 // Type represents a general Redis response type, as returned by redigo.
 // All retigo types embed the Type structure and have access to its methods.
